@@ -153,6 +153,12 @@ Calling an external process in `bash` is expensive and excessive use will cause 
 
 The contents of this book provide a reference for solving problems encountered when writing programs and scripts in `bash`. Examples are in function formats showcasing how to incorporate these solutions into code.
 
+### Nushell Foreword
+
+Nushell has a lot of built-in functionality that makes manipulating data really easy. Data structure types, typed inputs and outputs, and easy to remember function names. Nushell sets itself apart as a scripting language because of all of this functional utility. 
+
+Bash is super important and nushell will not be able to fully replace it. The main point of writing these nushell alternatives to the bash functions is to show the strengths of nushell and where bash can fall short. Also, hopefully this convinces someone that they should try out nushell as a scripting language or shell. It's an incredibly powerful tool you can have at your fingurtips.
+
 <!-- CHAPTER END -->
 
 <!-- CHAPTER START -->
@@ -591,6 +597,23 @@ TheQuickBrownFox
 
 $ strip_all "The Quick Brown Fox" "Quick "
 The Brown Fox
+```
+
+### Nushell Version
+
+This is built-in to the nushell command `str replace`. To replace all instances, just add the flag `--all`. 
+
+**Example Usage:**
+
+```nu
+"The Quick Brown Fox" | str replace --all --regex "[aeiou]"
+# -> Th Qck Brwn Fx
+
+"The Quick Brown Fox" | str replace --all " "
+# -> TheQuickBrownFox
+
+"The Quick Brown Fox" | str replace --all "Quick "
+# -> The Brown Fox
 ```
 
 ## Strip first occurrence of pattern from string
