@@ -1,38 +1,14 @@
-<p align="center"><b>NEW: <a href="https://github.com/dylanaraps/pure-sh-bible">pure sh bible (📖 A collection of pure POSIX sh alternatives to external processes).</a></b></p>
+# pure nushell bible
 
-<br>
+A fork of dylanaraps awesome [pure bash bible](https://github.com/dylanaraps/pure-bash-bible) with pure nushell alternatives added in.
 
-<p align="center"><img src="https://raw.githubusercontent.com/odb/official-bash-logo/master/assets/Logos/Icons/PNG/512x512.png" width="200px"></p>
-<h1 align="center">pure bash bible</h1> <p
-align="center">A collection of pure bash alternatives to external
-processes.</p>
+The nushell script format goes as follows:
 
-<p align="center"> <a
-href="https://travis-ci.com/dylanaraps/pure-bash-bible"><img
-src="https://travis-ci.com/dylanaraps/pure-bash-bible.svg?branch=master"></a>
-<a href="./LICENSE.md"><img
-src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-</p>
-
-<br>
-
-<a href="https://leanpub.com/bash/">
-<img src="https://s3.amazonaws.com/titlepages.leanpub.com/bash/hero" width="40%" align="right">
-</a>
-
-The goal of this book is to document commonly-known and lesser-known methods of doing various tasks using only built-in `bash` features. Using the snippets from this bible can help remove unneeded dependencies from scripts and in most cases make them faster. I came across these tips and discovered a few while developing [neofetch](https://github.com/dylanaraps/neofetch), [pxltrm](https://github.com/dylanaraps/pxltrm) and other smaller projects.
-
-The snippets below are linted using `shellcheck` and tests have been written where applicable. Want to contribute? Read the [CONTRIBUTING.md](https://github.com/dylanaraps/pure-bash-bible/blob/master/CONTRIBUTING.md). It outlines how the unit tests work and what is required when adding snippets to the bible.
-
-See something incorrectly described, buggy or outright wrong? Open an issue or send a pull request. If the bible is missing something, open an issue and a solution will be found.
-
-<br>
-<p align="center"><b>This book is also available to purchase on leanpub. https://leanpub.com/bash</b></p>
-<p align="center"><b>Or you can buy me a coffee.</b>
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=V7QNJNKS3WYVS"><img src="https://img.shields.io/badge/don-paypal-yellow.svg"></a> <a href="https://www.patreon.com/dyla"><img src="https://img.shields.io/badge/don-patreon-yellow.svg"> </a><a href="https://liberapay.com/2211/"><img src="https://img.shields.io/badge/don-liberapay-yellow.svg"></a>
-</p>
-
-<br>
+```nu
+# Comments
+command here
+# -> output
+```
 
 # Table of Contents
 
@@ -210,6 +186,20 @@ $ trim_string "$name"
 John Black
 ```
 
+### Nushell Version
+
+This is a built-in command to nushell.
+
+**Example Usage:**
+
+```nu
+"    Hello,  World    " | str trim
+# -> Hello,  World
+
+let name = "   John Black  "
+$name | str trim
+# -> John Black
+```
 
 ## Trim all white-space from string and truncate spaces
 
@@ -239,6 +229,22 @@ Hello, World
 $ name="   John   Black  is     my    name.    "
 $ trim_all "$name"
 John Black is my name.
+```
+
+### Nushell Version
+
+There's two easy ways to do this in nushell. You can split the string with whitespace or do a simple regex replace.
+
+```nu
+# Method 1
+# Use '' for a string literal
+"    Hello,    World    " | split row --regex '\s+' | str join " "
+# -> Hello, World
+
+# Method 2
+let name = "   John   Black  is     my    name.    "
+$name | str replace --regex --all '\s+' " "
+# -> John Black is my name.
 ```
 
 ## Use regex on a string
@@ -278,24 +284,35 @@ $ regex "red" '^(#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3}))$'
 # no output (invalid)
 ```
 
-**Example Usage in script:**
+### Nushell Version
 
-```shell
-is_hex_color() {
-    if [[ $1 =~ ^(#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3}))$ ]]; then
-        printf '%s\n' "${BASH_REMATCH[1]}"
-    else
-        printf '%s\n' "error: $1 is an invalid color."
-        return 1
-    fi
-}
+Nushell has built-in regex tooling. The `parse` command gives you a way to split up a string into groups, and you also have `str replace --regex` or `split string --regex`.
 
-read -r color
-is_hex_color "$color" || color="#FFFFFF"
+```nu
+# Trim leading white-space.
+# Use '' for string literal (characters don't need to be escaped)
+'    hello' | str replace --regex --all '^\s*(.*)' ""
+# hello
 
-# Do stuff.
+# Validate a hex color.
+"#FFFFFF" | parse --regex '^(#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3}))$'
+# ->
+# ╭───┬──────────┬──────────╮
+# │ # │ capture0 │ capture1 │
+# ├───┼──────────┼──────────┤
+# │ 0 │ #FFFFFF  │ FFFFFF   │
+# ╰───┴──────────┴──────────╯
+
+# Validate a hex color and get the hex value
+# We name a group here to make it easier to select
+# The ? at the end makes `get` return nothing if the function fails
+"#FFFFFF" | parse --regex '^(?<color>#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3}))$' | get color.0?
+# -> #FFFFFF
+
+# Validate a hex color (invalid).
+"#FFFFFF" | parse --regex '^(?<color>#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3}))$' | get color.0?
+# ->
 ```
-
 
 ## Split a string on a delimiter
 
@@ -339,6 +356,39 @@ is
 john
 ```
 
+### Nushell Version
+
+This is a built-in nushell function, `split row` or `split column`.
+
+```nu
+"apples,oranges,pears,grapes" | split row ","
+# ->
+# ╭───┬─────────╮
+# │ 0 │ apples  │
+# │ 1 │ oranges │
+# │ 2 │ pears   │
+# │ 3 │ grapes  │
+# ╰───┴─────────╯
+
+"1, 2, 3, 4, 5" | split column ", "
+# ╭───┬─────────┬─────────┬─────────┬─────────┬─────────╮
+# │ # │ column1 │ column2 │ column3 │ column4 │ column5 │
+# ├───┼─────────┼─────────┼─────────┼─────────┼─────────┤
+# │ 0 │ 1       │ 2       │ 3       │ 4       │ 5       │
+# ╰───┴─────────┴─────────┴─────────┴─────────┴─────────╯
+
+# Multi char delimiters work too!
+"hello---world---my---name---is---john" | split row "---" 
+# ╭───┬───────╮
+# │ 0 │ hello │
+# │ 1 │ world │
+# │ 2 │ my    │
+# │ 3 │ name  │
+# │ 4 │ is    │
+# │ 5 │ john  │
+# ╰───┴───────╯
+```
+
 ## Change a string to lowercase
 
 **CAVEAT:** Requires `bash` 4+
@@ -363,6 +413,23 @@ hello
 
 $ lower "hello"
 hello
+```
+
+### Nushell Version
+
+This is a built-in function in nushell. There are a few cases nushell supports: camel, kebab, snake, title, pascal, screaming snake, upcase, and downcase. The function is `str <case>-case`
+
+**Example Usage:**
+
+```nu
+"HELLO" | str downcase
+# -> hello
+
+"HeLlO" | str downcase
+# -> hello
+
+"hello" | str downcase
+# -> hello
 ```
 
 ## Change a string to uppercase
@@ -391,6 +458,23 @@ $ upper "HELLO"
 HELLO
 ```
 
+### Nushell Version
+
+This is a built-in function in nushell. There are a few cases nushell supports: camel, kebab, snake, title, pascal, screaming snake, upcase, and downcase. The function is `str <case>-case`
+
+**Example Usage:**
+
+```nu
+"HELLO" | str upcase
+# -> hello
+
+"HELLO" | str upcase
+# -> hello
+
+"HELLO" | str upcase
+# -> HELLO
+```
+
 ## Reverse a string case
 
 **CAVEAT:** Requires `bash` 4+
@@ -417,6 +501,42 @@ $ reverse_case "HELLO"
 hello
 ```
 
+### Nushell Version
+
+Performing this operation is slightly more complicated. This method categorizes each character based on if it is already lower, inverts each character, then concatenates.
+
+The goal of this method is to show how you can chain simple functions to perform complex operations.
+
+**Example Usage:**
+
+```nu
+def "str invertcase" []: string -> string {
+    (
+        $in 
+        | split chars 
+        | wrap "char" 
+        | upsert lower {|x| ($x.char | str downcase) == $x.char } 
+        | upsert invert {|x| 
+            if ($x.lower) { 
+                $x.char | str upcase 
+            } else { 
+                $x.char | str downcase 
+            }
+        } 
+        | get invert | str join ""
+    )
+}
+
+"hello" | str invertcase
+# -> HELLO
+
+"HeLlO" | str downcase
+# -> hElLo
+
+"hello" | str downcase
+# -> HELLO
+```
+
 ## Trim quotes from a string
 
 **Example Function:**
@@ -435,6 +555,18 @@ trim_quotes() {
 $ var="'Hello', \"World\""
 $ trim_quotes "$var"
 Hello, World
+```
+
+### Nushell Version
+
+This can be accomplished with regex or simple string replacements.
+
+**Example Usage:**
+
+```nu
+let var = "'Hello', \"World\""
+$var | str replace --all '"' "" | str replace --all "'" ""
+# -> Hello, World
 ```
 
 ## Strip all instances of pattern from string
@@ -482,6 +614,20 @@ $ strip "The Quick Brown Fox" "[[:space:]]"
 TheQuick Brown Fox
 ```
 
+### Nushell Version
+
+This is a built-in nushell command, `str replace`. To have it only replace the first one, just do not pass in `--all`
+
+**Example Usage:**
+
+```nu
+"The Quick Brown Fox" | str replace -r '[aeiou]' ""
+# -> Th Quick Brown Fox
+
+"The Quick Brown Fox" " " | str replace " " ""
+# -> TheQuick Brown Fox
+```
+
 ## Strip pattern from start of string
 
 **Example Function:**
@@ -500,6 +646,27 @@ $ lstrip "The Quick Brown Fox" "The "
 Quick Brown Fox
 ```
 
+### Nushell Version
+
+There are two methods to do this, either using regex or checking if the string starts with the substring with `str starts-with`. The example will show `str starts-with` since there have been other regex examples.
+
+**Example Usage:**
+
+```nu
+def "str lstrip" [ss: string]: string -> string {
+    # This can be rewritten into a one-liner, but this looks nicer
+    let val = $in
+    if (not ($val | str starts-with $ss)) {
+        $val
+    } else {
+        ($val | str substring ($ss | str length)..)
+    }
+}
+
+"The Quick Brown Fox" | str lstrip "The "
+# -> Quick Brown Fox
+```
+
 ## Strip pattern from end of string
 
 **Example Function:**
@@ -516,6 +683,28 @@ rstrip() {
 ```shell
 $ rstrip "The Quick Brown Fox" " Fox"
 The Quick Brown
+```
+
+### Nushell Version
+
+There are two methods to do this, either using regex or checking if the string starts with the substring with `str ends-with`. The example will show `str ends-with` since there have been other regex examples.
+
+**Example Usage:**
+
+```nu
+def "str rstrip" [ss: string]: string -> string {
+    # This can be rewritten into a one-liner, but this looks nicer
+    let val = $in
+    if (not ($val | str ends-with $ss)) {
+        $val
+    } else {
+        # Substring supports negative indices
+        ($val | str substring ..((($ss | str length) + 1) * -1))
+    }
+}
+
+"The Quick Brown Fox" | str rstrip " Fox"
+# -> The Quick Brown
 ```
 
 ## Percent-encode a string
@@ -549,6 +738,17 @@ $ urlencode "https://github.com/dylanaraps/pure-bash-bible"
 https%3A%2F%2Fgithub.com%2Fdylanaraps%2Fpure-bash-bible
 ```
 
+### Nushell Version
+
+This is a built-in nushell function, `url encode`.
+
+**Example Usage:**
+
+```nu
+"https://github.com/DarkKronicle/pure-bash-bible" | url encode --all
+# -> https%3A%2F%2Fgithub%2Ecom%2FDarkKronicle%2Fpure%2Dbash%2Dbible
+```
+
 ## Decode a percent-encoded string
 
 **Example Function:**
@@ -566,6 +766,17 @@ urldecode() {
 ```shell
 $ urldecode "https%3A%2F%2Fgithub.com%2Fdylanaraps%2Fpure-bash-bible"
 https://github.com/dylanaraps/pure-bash-bible
+```
+
+### Nushell Version
+
+This is a built-in nushell function, `url decode`.
+
+**Example Usage:**
+
+```nu
+"https%3A%2F%2Fgithub%2Ecom%2FDarkKronicle%2Fpure%2Dbash%2Dbible" | url decode
+# -> https://github.com/DarkKronicle/pure-bash-bible
 ```
 
 ## Check if string contains a sub-string
@@ -606,6 +817,52 @@ case "$var" in
 esac
 ```
 
+### Nushell Version
+
+This is a built-in nushell function, `str contains` or `in`.
+
+**Example Usage:**
+
+```nu
+"input string" | str contains "strINg" --ignore-case
+# -> true
+
+# Works in lists
+["hello" "world" "I" "am" "here"] | str contains 'e'
+# ->
+# ╭───┬───────╮
+# │ 0 │ true  │
+# │ 1 │ false │
+# │ 2 │ false │
+# │ 3 │ false │
+# │ 4 │ true  │
+# ╰───┴───────╯
+
+# You can get a bit fancier and wrap into a table
+["hello" "world" "I" "am" "here"] | wrap input | upsert result {|x| $x.input | str contains 'e' }
+# ->
+# ╭───┬───────┬────────╮
+# │ # │ input │ result │
+# ├───┼───────┼────────┤
+# │ 0 │ hello │ true   │
+# │ 1 │ world │ false  │
+# │ 2 │ I     │ false  │
+# │ 3 │ am    │ false  │
+# │ 4 │ here  │ true   │
+# ╰───┴───────┴────────╯
+
+# Works in tables
+# We use the spread operator (...) with the input columns to check each
+[[ColA ColB]; [hello world], [hi there]] | str contains 'e' ...($in | columns)
+# ->
+# ╭───┬───────┬───────╮
+# │ # │ ColA  │ ColB  │
+# ├───┼───────┼───────┤
+# │ 0 │ true  │ false │
+# │ 1 │ false │ true  │
+# ╰───┴───────┴───────╯
+```
+
 ## Check if string starts with sub-string
 
 ```shell
@@ -619,6 +876,17 @@ if [[ $var != sub_string* ]]; then
 fi
 ```
 
+### Nushell Version
+
+This is a built-in nushell function, `str starts-with`.
+
+**Example Usage:**
+
+```nu
+"hello world" | str starts-with "he"
+# -> true
+```
+
 ## Check if string ends with sub-string
 
 ```shell
@@ -630,6 +898,17 @@ fi
 if [[ $var != *sub_string ]]; then
     printf '%s\n' "var does not end with sub_string."
 fi
+```
+
+### Nushell Version
+
+This is a built-in nushell function, `str ends-with`.
+
+**Example Usage:**
+
+```nu
+"hello world" | str ends-with "ld"
+# -> true
 ```
 
 <!-- CHAPTER END -->
