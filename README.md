@@ -157,6 +157,8 @@ The contents of this book provide a reference for solving problems encountered w
 
 Nushell has a lot of built-in functionality that makes manipulating data really easy. Data structure types, typed inputs and outputs, and easy to remember function names. Nushell sets itself apart as a scripting language because of all of this functional utility. 
 
+Nushell also tries to optimize wherever possible. For structured data especially, nushell pipelines in such a way to minimize computation. Such as getting the first 5 lines from a file (no need to read the entire file).
+
 Bash is super important and nushell will not be able to fully replace it. The main point of writing these nushell alternatives to the bash functions is to show the strengths of nushell and where bash can fall short. Also, hopefully this convinces someone that they should try out nushell as a scripting language or shell. It's an incredibly powerful tool you can have at your fingurtips.
 
 <!-- CHAPTER END -->
@@ -974,6 +976,28 @@ blue
 red
 ```
 
+### Nushell Version
+
+Arrays in nushell are a first-class citizen. A ton of functions perform operations on lists. Creating and altering them is super easy.
+
+To reverse an array, nushell has the command `reverse`.
+
+**Example Usage:**
+
+```nu
+["the" "quick" "brown" "fox"] | reverse
+# ->
+# ╭───┬───────╮
+# │ 0 │ fox   │
+# │ 1 │ brown │
+# │ 2 │ quick │
+# │ 3 │ the   │
+# ╰───┴───────╯
+
+"Arrays are awesome in nushell!" | split row -r '\s+' | reverse | str join " "
+# -> nushell! in awesome are Arrays
+```
+
 ## Remove duplicate array elements
 
 Create a temporary associative array. When setting associative array
@@ -1016,6 +1040,34 @@ green
 blue
 ```
 
+### Nushell Version
+
+Nushell has the `uniq` command.
+
+**Example Usage:**
+
+```nu
+[1 1 2 2 3 3 3 3 3 4 4 4 4 4 5 5 5 5 5 5] | uniq
+# ->
+# ╭───┬───╮
+# │ 0 │ 1 │
+# │ 1 │ 2 │
+# │ 2 │ 3 │
+# │ 3 │ 4 │
+# │ 4 │ 5 │
+# ╰───┴───╯
+
+[red red green blue blue] | uniq --count
+# ->
+# ╭───┬───────┬───────╮
+# │ # │ value │ count │
+# ├───┼───────┼───────┤
+# │ 0 │ red   │     2 │
+# │ 1 │ green │     1 │
+# │ 2 │ blue  │     2 │
+# ╰───┴───────┴───────╯
+```
+
 ## Random array element
 
 **Example Function:**
@@ -1040,6 +1092,26 @@ $ random_array_element 1 2 3 4 5 6 7
 3
 ```
 
+### Nushell Version
+
+There are two main methods for this. The naive way is to grab a random element is to shuffle the array and then grab the first N. The other way is to generate a random index.
+
+```nu
+seq 1 20 | shuffle | first 5
+# ->
+# ╭───┬────╮
+# │ 0 │ 17 │
+# │ 1 │ 15 │
+# │ 2 │  6 │
+# │ 3 │  2 │
+# │ 4 │ 16 │
+# ╰───┴────╯
+
+# The < here makes the range exclusive
+[the quick brown fox] | get (random int 0..<($in | length))
+# -> quick
+```
+
 ## Cycle through an array
 
 Each time the `printf` is called, the next array element is printed. When
@@ -1055,6 +1127,20 @@ cycle() {
 }
 ```
 
+### Nushell Version
+
+Because nushell is mainly functional, it's hard to do complex control flows within a one-liner. In a normal script, we can use `while` and `for`. `for` allows for easy enumeration of elements in an array.
+
+```nu
+
+let arr = [a b c d e f]
+
+while (true) {
+    for $x in $arr {
+        print $x
+    }
+}
+```
 
 ## Toggle between two values
 
@@ -1068,6 +1154,10 @@ cycle() {
     ((i=i>=${#arr[@]}-1?0:++i))
 }
 ```
+
+### Nushell Version
+
+The same as above, but if just true/false you can simply negate the value.
 
 <!-- CHAPTER END -->
 
@@ -1085,6 +1175,51 @@ for i in {0..100}; do
 done
 ```
 
+### Nushell Version
+
+With a control flow, you can use `for`, but nushell gives you the ability to use each or par-each (parallel each).
+
+**Usage Example:**
+
+```nu
+# Simply do something with the numbers 1 to 10
+seq 1 10 | each {|x| $x * 2 - 1}
+# ->
+# ╭───┬────╮
+# │ 0 │  1 │
+# │ 1 │  3 │
+# │ 2 │  5 │
+# │ 3 │  7 │
+# │ 4 │  9 │
+# │ 5 │ 11 │
+# │ 6 │ 13 │
+# │ 7 │ 15 │
+# │ 8 │ 17 │
+# │ 9 │ 19 │
+# ╰───┴────╯
+
+# Or par-each (order not guarenteed)
+seq 1 10 | par-each {|x| $x * 2 - 1}
+# ->
+# ╭───┬────╮
+# │ 0 │ 17 │
+# │ 1 │ 13 │
+# │ 2 │ 15 │
+# │ 3 │  7 │
+# │ 4 │ 19 │
+# │ 5 │  9 │
+# │ 6 │  1 │
+# │ 7 │  5 │
+# │ 8 │  3 │
+# │ 9 │ 11 │
+# ╰───┴────╯
+
+# You can also do a for loop
+for $x in 0..10 {
+    print $x
+}
+```
+
 ## Loop over a variable range of numbers
 
 Alternative to `seq`.
@@ -1097,6 +1232,24 @@ for ((i=0;i<=VAR;i++)); do
 done
 ```
 
+### Nushell Version
+
+Nushell allows you to put variables pretty much anywhere. It follows precedence of parenthesis, so you can always add more.
+
+```nu
+let var = 50
+
+# [0, var)
+0..<$var | each { print $"The number is ($in)" }
+
+# [1, var]
+1..$var | each { print $"The number is ($in)" }
+
+for $i in 1..$var {
+    print $"The number is ($in)"
+}
+```
+
 ## Loop over an array
 
 ```shell
@@ -1107,6 +1260,10 @@ for element in "${arr[@]}"; do
     printf '%s\n' "$element"
 done
 ```
+
+### Nushell Version
+
+The same as the above examples. `each`, `par-each`, `for` (a lot of stuff is lists in nushell).
 
 ## Loop over an array with an index
 
@@ -1124,12 +1281,52 @@ for ((i=0;i<${#arr[@]};i++)); do
 done
 ```
 
+### Nushell Version
+
+Nushell has the function `enumerate`.
+
+```nu
+[a b c d e f] | enemerate { print $"Index ($in.index) is ($in.item)" }
+```
+
 ## Loop over the contents of a file
 
 ```shell
 while read -r line; do
     printf '%s\n' "$line"
 done < "file"
+```
+
+### Nushell Version
+
+To get lines of some string, just use `lines`. When opening a file, nushell puts it into structured data if it's supported (json, toml, yml, etc), so you can pass in `--raw` to avoid that.
+
+```nu
+open LICENSE.md --raw | lines | split words | each { length }
+# ->
+# ╭────┬────╮
+# │  0 │  4 │
+# │  1 │  0 │
+# │  2 │  6 │
+# │  3 │  0 │
+# │  4 │ 13 │
+# │  5 │ 11 │
+# │  6 │ 10 │
+# │  7 │ 11 │
+# │  8 │ 13 │
+# │  9 │  9 │
+# │ 10 │  0 │
+# │ 11 │ 13 │
+# │ 12 │  7 │
+# │ 13 │  0 │
+# │ 14 │ 13 │
+# │ 15 │ 10 │
+# │ 16 │ 12 │
+# │ 17 │ 12 │
+# │ 18 │ 12 │
+# │ 19 │ 16 │
+# │ 20 │  1 │
+# ╰────┴────╯
 ```
 
 ## Loop over files and directories
@@ -1163,6 +1360,19 @@ for file in ~/Pictures/**/*; do
     printf '%s\n' "$file"
 done
 shopt -u globstar
+```
+
+### Nushell
+
+`ls` is a built-in command to nushell, so is `glob`.
+
+```nu
+# Using glob for raw file names
+glob **/*.json | par-each { path-expand } | wrap file | upsert has-e { open $in.file --raw | str contains 'e' }
+
+# Do fancy stuff with ls (gotta love types!)
+ls | where modified < 2day
+ls | where size > 1MiB
 ```
 
 <!-- CHAPTER END -->
@@ -2491,12 +2701,3 @@ printf "%s\n" "${foo}" # BAR
 ```
 
 <!-- CHAPTER END -->
-
-# AFTERWORD
-
-Thanks for reading! If this bible helped you in any way and you'd like to give back, consider donating. Donations give me the time to make this the best resource possible. Can't donate? That's OK, star the repo and share it with your friends!
-
-<a href="https://www.patreon.com/dyla"><img src="https://img.shields.io/badge/donate-patreon-yellow.svg"></a>
-
-
-Rock on. 🤘
